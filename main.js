@@ -5,6 +5,11 @@ const { StaticAuthProvider  } = require("@twurple/auth");
 const { EventSubWsListener } = require("@twurple/eventsub-ws");
 const fs = require("fs");
 const http = require("http");
+const dgram = require('dgram'); // Module for UDP communication
+const sbSocket = dgram.createSocket('udp4'); // Create receiver socket
+const SB_PORT = 8085; // Same port as Streamer.bot
+
+
 
 // Previous versions of twurple had node_modules folders in some of the sub-packages.
 // These, for some reason, cause the event listeners to fail to create themselves.
@@ -132,7 +137,7 @@ var authProvider, token, apiClient, eventClient, chatClient, user, authenticated
 
 const clientId = "u4rwa52hwkkgyoyow0t3gywxyv54pg";
 const redirectUri = "http://localhost:28396";
-const scope = "chat%3Aread%20channel%3Aread%3Aredemptions%20channel%3Aread%3Asubscriptions%20bits%3Aread%20moderator%3Aread%3Afollowers%20channel%3Aread%3Acharity";
+const scope = "chat%3Aread%20channel%3Aread%3Aredemptions%20channel%3Aread%3Asubscriptions%20bits%3Aread%20moderator%3Aread%3Afollowers";
 const authURI = "https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=" + clientId + "&redirect_uri=" + redirectUri + "&scope=" + scope;
 
 http.createServer(function (req, res) {
@@ -1299,3 +1304,47 @@ function handleRaidEmotes(_, emotes)
       barrage(numRaiders);
   }
 }
+// -----------------
+sbSocket.on('message', (msg, rinfo) => {
+    // 1. Read message from Streamer.bot
+    const command = msg.toString().trim();
+    console.log(`[Streamer.bot Bridge] Received command: "${command}"`);
+
+    try {
+      // Check if global variable 'data' is ready (application settings database)
+      if (typeof data === 'undefined' || !data.customBonks) {
+        console.log("WARNING: Application not ready or data not loaded.");
+        return;
+      }
+
+      // 2. Action Selection Logic
+      if (command.toLowerCase() === 'single') {
+        if (typeof single === 'function') single();
+      } 
+      else if (command.toLowerCase() === 'barrage') {
+        if (typeof barrage === 'function') barrage(null);
+      } 
+      else {
+        // 3. Custom Bonk Logic (With Safety Check)
+        
+        // Check if this bonk name exists in the database?
+        if (data.customBonks.hasOwnProperty(command)) {
+          console.log(`-> Executing Custom Bonk: ${command}`);
+          custom(command);
+        } else {
+          console.log(`ERROR: Custom Bonk named "${command}" NOT FOUND.`);
+          
+          // DEBUG FEATURE: Display all available names in log
+          const availableNames = Object.keys(data.customBonks);
+          console.log("List of available names in application:", availableNames);
+          console.log("Tip: Make sure uppercase/lowercase matches exactly!");
+        }
+      }
+    } catch (error) {
+        console.error("[Streamer.bot Bridge] Error System:", error);
+    }
+});
+
+sbSocket.bind(SB_PORT, () => {
+    console.log(`[Streamer.bot Bridge] Ready at port ${SB_PORT} (Safe Mode)`);
+});
