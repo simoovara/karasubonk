@@ -1,7 +1,7 @@
 const { ipcRenderer } = require("electron");
 const fs = require("fs");
 
-const version = 1.26;
+const version = 1.25;
 
 // ------
 // Status
@@ -1391,7 +1391,7 @@ async function bonkDetails(customBonkName)
         bonkDetailsTable.querySelector(".spinSpeedMin").value = customBonks[customBonkName].spinSpeedMin;
         bonkDetailsTable.querySelector(".spinSpeedMin").addEventListener("change", async () => {
             var customBonks = await getData("customBonks");
-            customBonks[customBonkName].spinSpeedMin = parseFloat(bonkDetailsTable.querySelector(".spinSpeedMin").value);
+            customBonks[customName].spinSpeedMin = parseFloat(bonkDetailsTable.querySelector(".spinSpeedMin").value);
             setData("customBonks", customBonks);
         });
 
@@ -1937,6 +1937,10 @@ async function loadData(field)
             document.querySelector("#" + field).value = thisData;
             if (field == "portThrower" || field == "portVTubeStudio" || field == "ipThrower" || field == "ipVTubeStudio")
                 setPorts();
+                
+            // --- TAMBAHAN KITA UNTUK MENGIRIM PORT SAAT BOOT ---
+            if (field == "udpPort")
+                ipcRenderer.send("changeUdpPort", parseInt(thisData));
         }
     }
     else
@@ -1944,6 +1948,10 @@ async function loadData(field)
         const node = document.querySelector("#" + field);
         const val = node.type == "checkbox" ? node.checked : (node.type == "number" ? parseFloat(node.value) : node.value);
         setData(field, val);
+        
+        // --- TAMBAHAN KITA UNTUK MENGIRIM DEFAULT PORT SAAT BOOT ---
+        if (field == "udpPort")
+            ipcRenderer.send("changeUdpPort", parseInt(val));
     }
 }
 
@@ -2228,6 +2236,7 @@ window.onload = async function()
     loadData("volume");
     loadData("portThrower");
     loadData("portVTubeStudio");
+    loadData("udpPort"); // INI DIA KUNCINYA AGAR DATA TERBACA SAAT DIBUKA
     loadData("ipThrower");
     loadData("ipVTubeStudio");
     loadData("minimizeToTray");
@@ -2314,6 +2323,10 @@ document.querySelector("#delay").addEventListener("change", () => { clampValue(d
 document.querySelector("#volume").addEventListener("change", () => { clampValue(document.querySelector("#volume"), 0, 1); setData("volume", parseFloat(document.querySelector("#volume").value)) });
 document.querySelector("#portThrower").addEventListener("change", () => { differentValue(document.querySelector("#portThrower"), document.querySelector("#portVTubeStudio")); clampValue(document.querySelector("#portThrower"), 1024, 65535); setData("portThrower", parseInt(document.querySelector("#portThrower").value)) });
 document.querySelector("#portVTubeStudio").addEventListener("change", () => { differentValue(document.querySelector("#portVTubeStudio"), document.querySelector("#portThrower")); clampValue(document.querySelector("#portVTubeStudio"), 1024, 65535); setData("portVTubeStudio", parseInt(document.querySelector("#portVTubeStudio").value)) });
+
+// INI LOGIKA UNTUK MENYIMPAN PORT KITA SAAT DIUBAH!
+document.querySelector("#udpPort").addEventListener("change", () => { clampValue(document.querySelector("#udpPort"), 1024, 65535); let newPort = parseInt(document.querySelector("#udpPort").value); setData("udpPort", newPort); ipcRenderer.send("changeUdpPort", newPort); });
+
 document.querySelector("#ipThrower").addEventListener("change", () => setData("ipThrower", document.querySelector("#ipThrower").value));
 document.querySelector("#ipVTubeStudio").addEventListener("change", () => setData("ipVTubeStudio", document.querySelector("#ipVTubeStudio").value));
 document.querySelector("#minimizeToTray").addEventListener("change", () => setData("minimizeToTray", document.querySelector("#minimizeToTray").checked));
