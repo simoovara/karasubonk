@@ -1,47 +1,53 @@
-const { app, Menu, Tray, BrowserWindow, ipcMain, session } = require("electron");
+const {
+  app,
+  Menu,
+  Tray,
+  BrowserWindow,
+  ipcMain,
+  session,
+} = require("electron");
 const { ApiClient } = require("@twurple/api");
 const { ChatClient } = require("@twurple/chat");
-const { StaticAuthProvider  } = require("@twurple/auth");
+const { StaticAuthProvider } = require("@twurple/auth");
 const { EventSubWsListener } = require("@twurple/eventsub-ws");
 const fs = require("fs");
 const http = require("http");
-
-
 
 // Previous versions of twurple had node_modules folders in some of the sub-packages.
 // These, for some reason, cause the event listeners to fail to create themselves.
 // Thus, we search the folders for these folders and delete them.
 // This allows users to overwrite their old files without issue.
 var deletedFolder = false;
-fs.readdirSync(__dirname + "/node_modules/@twurple").forEach(file => {
-  if (fs.existsSync(__dirname + "/node_modules/@twurple/" + file + "/node_modules"))
-  {
+fs.readdirSync(__dirname + "/node_modules/@twurple").forEach((file) => {
+  if (
+    fs.existsSync(
+      __dirname + "/node_modules/@twurple/" + file + "/node_modules",
+    )
+  ) {
     deletedFolder = true;
-    fs.rmSync(__dirname + "/node_modules/@twurple/" + file + "/node_modules", { recursive: true, force: true });
+    fs.rmSync(__dirname + "/node_modules/@twurple/" + file + "/node_modules", {
+      recursive: true,
+      force: true,
+    });
   }
 });
-if (deletedFolder)
-{
-  app.relaunch()
-  app.exit()
+if (deletedFolder) {
+  app.relaunch();
+  app.exit();
 }
 
 var mainWindow;
 
 const isPrimary = app.requestSingleInstanceLock();
-    
-if (!isPrimary)
-  app.quit()
-else
-{
+
+if (!isPrimary) app.quit();
+else {
   app.on("second-instance", () => {
-    if (mainWindow)
-    {
-      if (mainWindow.isMinimized())
-        mainWindow.restore();
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
     }
-  })
+  });
 }
 
 const createWindow = () => {
@@ -54,27 +60,23 @@ const createWindow = () => {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      enableRemoteModule: true
+      enableRemoteModule: true,
     },
     autoHideMenuBar: true,
-    useContentSize: true
-  })
-  
+    useContentSize: true,
+  });
+
   mainWindow.loadFile("index.html");
 
   // Minimizing to and restoring from tray
   mainWindow.on("minimize", () => {
-    if (data.minimizeToTray)
-    {
+    if (data.minimizeToTray) {
       setTray();
       mainWindow.setSkipTaskbar(true);
-    }
-    else
-    {
-      if (tray != null)
-      {
+    } else {
+      if (tray != null) {
         setTimeout(() => {
-          tray.destroy()
+          tray.destroy();
         }, 100);
       }
 
@@ -83,10 +85,9 @@ const createWindow = () => {
   });
 
   mainWindow.on("restore", () => {
-    if (tray != null)
-    {
+    if (tray != null) {
       setTimeout(() => {
-        tray.destroy()
+        tray.destroy();
       }, 100);
     }
 
@@ -96,30 +97,37 @@ const createWindow = () => {
   mainWindow.on("close", () => {
     exiting = true;
   });
-}
+};
 
-function setTray()
-{
+function setTray() {
   tray = new Tray(__dirname + "/icon.ico");
   contextMenu = Menu.buildFromTemplate([
-    { label: "Open", click: () => { mainWindow.restore(); } },
-    { label: "Quit", role: "quit" }
+    {
+      label: "Open",
+      click: () => {
+        mainWindow.restore();
+      },
+    },
+    { label: "Quit", role: "quit" },
   ]);
   tray.setContextMenu(contextMenu);
-  tray.on("click", () => { mainWindow.restore(); });
+  tray.on("click", () => {
+    mainWindow.restore();
+  });
 }
 
-var tray = null, contextMenu;
+var tray = null,
+  contextMenu;
 app.whenReady().then(() => {
   createWindow();
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
 });
 
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") app.quit()
+  if (process.platform !== "darwin") app.quit();
 });
 
 ipcMain.on("getUserDataPath", () => {
@@ -130,14 +138,14 @@ ipcMain.on("getUserDataPath", () => {
 // Authentication
 // --------------
 
-var authProvider, token, apiClient, eventClient, chatClient, user, authenticated = false, authenticating = false, listenersActive = false;
+//var authProvider, token, apiClient, eventClient, chatClient, user, authenticated = false, authenticating = false, listenersActive = false;
 
-const clientId = "u4rwa52hwkkgyoyow0t3gywxyv54pg";
-const redirectUri = "http://localhost:28396";
-const scope = "chat%3Aread%20channel%3Aread%3Aredemptions%20channel%3Aread%3Asubscriptions%20bits%3Aread%20moderator%3Aread%3Afollowers";
-const authURI = "https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=" + clientId + "&redirect_uri=" + redirectUri + "&scope=" + scope;
+//const clientId = "u4rwa52hwkkgyoyow0t3gywxyv54pg";
+//const redirectUri = "http://localhost:28396";
+//const scope = "chat%3Aread%20channel%3Aread%3Aredemptions%20channel%3Aread%3Asubscriptions%20bits%3Aread%20moderator%3Aread%3Afollowers%20channel%3Aread%3Acharity";
+//const authURI = "https://id.twitch.tv/oauth2/authorize?response_type=token&client_id=" + clientId + "&redirect_uri=" + redirectUri + "&scope=" + scope;
 
-http.createServer(function (req, res) {
+/*  http.createServer(function (req, res) {
   if (req.url.includes("access_token"))
   {
     setData("accessToken", req.url.substring(req.url.indexOf("=") + 1));
@@ -180,49 +188,50 @@ async function login()
 
 // When the "Log out" or "Log in" button is clicked
 ipcMain.on("reauthenticate", async () => {
-  if (authenticated)
-    logOut();
-  else
-    authenticate();
+  if (authenticated) logOut();
+  else authenticate();
 });
 
-var eventListeners = [], chatListeners = [];
+var eventListeners = [],
+  chatListeners = [];
 
 // Event listeners
 async function eventSub() {
-
   // EventSub
   eventClient = new EventSubWsListener({ apiClient });
   eventClient.start();
 
   // EventSub Event Listeners
-  if (authenticated)
-  {
+  if (authenticated) {
     console.log("Listening to Redemptions");
-    eventListeners.push(eventClient.onChannelRedemptionAdd(user.id, onRedeemHandler));
+    eventListeners.push(
+      eventClient.onChannelRedemptionAdd(user.id, onRedeemHandler),
+    );
   }
 
-  if (authenticated)
-  {
+  if (authenticated) {
     console.log("Listening to Subs");
-    eventListeners.push(eventClient.onChannelSubscription(user.id, onSubHandler));
+    eventListeners.push(
+      eventClient.onChannelSubscription(user.id, onSubHandler),
+    );
   }
 
-  if (authenticated)
-  {
+  if (authenticated) {
     console.log("Listening to Charity Donations");
-    eventListeners.push(eventClient.onChannelCharityDonation(user.id, onCharityHandler));
+    eventListeners.push(
+      eventClient.onChannelCharityDonation(user.id, onCharityHandler),
+    );
   }
 
-  if (authenticated)
-  {
+  if (authenticated) {
     console.log("Listening to Bits");
     eventListeners.push(eventClient.onChannelCheer(user.id, onBitsHandler));
   }
-  if (authenticated)
-  {
+  if (authenticated) {
     console.log("Listening to Follows");
-    eventListeners.push(eventClient.onChannelFollow(user.id, user.id, onFollowHandler));
+    eventListeners.push(
+      eventClient.onChannelFollow(user.id, user.id, onFollowHandler),
+    );
   }
 
   // Chat
@@ -230,14 +239,12 @@ async function eventSub() {
   chatClient.connect();
 
   // Chat Event Listeners
-  if (authenticated)
-  {
+  if (authenticated) {
     console.log("Listening to Messages");
     chatListeners.push(chatClient.onMessage(onMessageHandler));
   }
-  
-  if (authenticated)
-  {
+
+  if (authenticated) {
     console.log("Listening to Raids");
     chatListeners.push(chatClient.onRaid(onRaidHandler));
   }
@@ -247,15 +254,13 @@ async function eventSub() {
     listenersActive = true;
 }
 
-function logOut()
-{
+function logOut() {
   // Clear cookies to allow reauthentication
   session.defaultSession.clearStorageData([], () => {});
   setData("accessToken", null);
 
   // Delete all existing listeners
-  for (var i = 0; i < eventListeners.length; i++)
-    eventListeners[i].stop();
+  for (var i = 0; i < eventListeners.length; i++) eventListeners[i].stop();
   eventListeners = [];
   for (var i = 0; i < chatListeners.length; i++)
     chatClient.removeListener(chatListeners[i]);
@@ -268,67 +273,65 @@ function logOut()
   chatClient = null;
 
   // Reset window protection variables
-  authenticated = false;
-  authenticating = false;
+//  authenticated = false;
+//  authenticating = false;
 
-  listenersActive = false;
+//  listenersActive = false;
 }
-
+*/
 // Periodically reporting status back to renderer
 var exiting = false;
 setInterval(() => {
-  if (mainWindow != null)
-  {
+  if (mainWindow != null) {
     var status = 0;
-    if (portInUse)
-      status = 9;
-    else if (!authenticated)
-      status = 1;
-    else if (!listenersActive)
-      status = 8;
-    else if (socket == null)
-      status = 2;
-    else if (calibrateStage == 0 || calibrateStage == 1)
-      status = 3;
-    else if (calibrateStage == 2 || calibrateStage == 3)
-      status = 4;
-    else if (!connectedVTube)
-      status = 5;
-    else if (listening)
-      status = 6;
-    else if (calibrateStage == -1)
-      status = 7;
-    else if (badVersion)
-      status = 10;
-    else if (noResponse)
-      status = 11;
-    else if (authenticating)
-      status = 12;
-  
-    if (!exiting)
-      mainWindow.webContents.send("status", status);
+    if (portInUse) status = 9;
+    //  else if (!authenticated) status = 1;
+    // else if (!listenersActive) status = 8;
+    else if (socket == null) status = 2;
+    else if (calibrateStage == 0 || calibrateStage == 1) status = 3;
+    else if (calibrateStage == 2 || calibrateStage == 3) status = 4;
+    else if (!connectedVTube) status = 5;
+    else if (listening) status = 6;
+    else if (calibrateStage == -1) status = 7;
+    else if (badVersion) status = 10;
+    else if (noResponse) status = 11;
+    // else if (authenticating) status = 12;
+
+    if (!exiting) mainWindow.webContents.send("status", status);
   }
 }, 100);
 
 // Loading data from file
 // If no data exists, create data from default data file
-const defaultData = JSON.parse(fs.readFileSync(__dirname + "/defaultData.json", "utf8"));
+const defaultData = JSON.parse(
+  fs.readFileSync(__dirname + "/defaultData.json", "utf8"),
+);
 if (!fs.existsSync(app.getPath("userData")))
   fs.mkdirSync(app.getPath("userData"));
-if (!fs.existsSync(app.getPath("userData") + "/data.json"))
-{
+if (!fs.existsSync(app.getPath("userData") + "/data.json")) {
   if (fs.existsSync(__dirname + "/data.json"))
-    fs.copyFileSync(__dirname + "/data.json", app.getPath("userData") + "/data.json");
+    fs.copyFileSync(
+      __dirname + "/data.json",
+      app.getPath("userData") + "/data.json",
+    );
   else
-    fs.writeFileSync(app.getPath("userData") + "/data.json", JSON.stringify(defaultData));
+    fs.writeFileSync(
+      app.getPath("userData") + "/data.json",
+      JSON.stringify(defaultData),
+    );
 }
-var data = JSON.parse(fs.readFileSync(app.getPath("userData") + "/data.json", "utf8"));
+var data = JSON.parse(
+  fs.readFileSync(app.getPath("userData") + "/data.json", "utf8"),
+);
 
-if (data.accessToken != null)
-  login();
+if (data.accessToken != null) login();
 
-ipcMain.on("help", () => require('electron').shell.openExternal("https://typeou.dev/kbonk"));
-ipcMain.on("link", () => require('electron').shell.openExternal("https://typeou.itch.io/kbonk"));
+ipcMain.on("help", () =>
+  require("electron").shell.openExternal("https://typeou.dev/kbonk"),
+);
+ipcMain.on("link", () =>
+  require("electron").shell.openExternal("https://typeou.itch.io/kbonk"),
+);
 
 // ----------------
 // Websocket Server
@@ -336,29 +339,32 @@ ipcMain.on("link", () => require('electron').shell.openExternal("https://typeou.
 
 const WebSocket = require("ws");
 
-var wss, portInUse = false, socket, connectedVTube = false, badVersion = false, noResponse = false;
+var wss,
+  portInUse = false,
+  socket,
+  connectedVTube = false,
+  badVersion = false,
+  noResponse = false;
 
-function checkVersion()
-{
-  if (socket != null)
-  {
-    socket.send(JSON.stringify({
-      "type": "versionReport",
-      "version": data.version
-    }));
+function checkVersion() {
+  if (socket != null) {
+    socket.send(
+      JSON.stringify({
+        type: "versionReport",
+        version: data.version,
+      }),
+    );
     noResponse = true;
 
     setTimeout(() => {
-      if (noResponse || badVersion)
-        checkVersion();
+      if (noResponse || badVersion) checkVersion();
     }, 1000);
   }
 }
 
 createServer();
 
-function createServer()
-{
+function createServer() {
   portInUse = false;
 
   wss = new WebSocket.Server({ port: data.portThrower });
@@ -371,80 +377,70 @@ function createServer()
     }, 3000);
   });
 
-  if (!portInUse)
-  {
-    wss.on("connection", function connection(ws)
-    {
+  if (!portInUse) {
+    wss.on("connection", function connection(ws) {
       portInUse = false;
       socket = ws;
 
-      if (data.version != null)
-        checkVersion();
-      
-      socket.on("message", function message(request)
-      {
+      if (data.version != null) checkVersion();
+
+      socket.on("message", function message(request) {
         request = JSON.parse(request);
-    
-        if (request.type == "versionReport")
-        {
+
+        if (request.type == "versionReport") {
           noResponse = false;
           badVersion = parseFloat(request.version) != data.version;
         }
-        if (request.type == "calibrating")
-        {
-          switch (request.stage)
-          {
+        if (request.type == "calibrating") {
+          switch (request.stage) {
             case "min":
-              if (request.size > -99)
-              {
+              if (request.size > -99) {
                 calibrateStage = 0;
                 calibrate();
-              }
-              else
-              {
-                setData(request.modelID + "Min", [ request.positionX, request.positionY ], false);
+              } else {
+                setData(
+                  request.modelID + "Min",
+                  [request.positionX, request.positionY],
+                  false,
+                );
                 calibrateStage = 2;
                 calibrate();
               }
               break;
             case "max":
-              if (request.size < 99)
-              {
+              if (request.size < 99) {
                 calibrateStage = 2;
                 calibrate();
-              }
-              else
-              {
-                setData(request.modelID + "Max", [ request.positionX, request.positionY ], false);
+              } else {
+                setData(
+                  request.modelID + "Max",
+                  [request.positionX, request.positionY],
+                  false,
+                );
                 calibrateStage = 4;
                 calibrate();
               }
               break;
           }
-        }
-        else if (request.type == "status")
+        } else if (request.type == "status")
           connectedVTube = request.connectedVTube;
-        else if (request.type == "setAuthVTS")
-        {
+        else if (request.type == "setAuthVTS") {
           setData("authVTS", request.token);
           var request = {
-              "type": "getAuthVTS",
-              "token": request.token
-          }
+            type: "getAuthVTS",
+            token: request.token,
+          };
           socket.send(JSON.stringify(request));
-        }
-        else if (request.type == "getAuthVTS")
-        {
+        } else if (request.type == "getAuthVTS") {
           var request = {
-              "type": "getAuthVTS",
-              "token": data.authVTS
-          }
+            type: "getAuthVTS",
+            token: data.authVTS,
+          };
           socket.send(JSON.stringify(request));
         }
       });
-    
-      ws.on("close", function message()
-      {
+
+      ws.on("close", function message() {
         socket = null;
         calibrateStage = -2;
       });
@@ -461,39 +457,32 @@ ipcMain.on("nextCalibrate", () => nextCalibrate());
 ipcMain.on("cancelCalibrate", () => cancelCalibrate());
 
 var calibrateStage = -2;
-function startCalibrate()
-{
-  if (socket != null && connectedVTube)
-  {
+function startCalibrate() {
+  if (socket != null && connectedVTube) {
     calibrateStage = -1;
     calibrate();
   }
 }
 
-function nextCalibrate()
-{
-  if (socket != null && connectedVTube)
-  {
+function nextCalibrate() {
+  if (socket != null && connectedVTube) {
     calibrateStage++;
     calibrate();
   }
 }
 
-function cancelCalibrate()
-{
-  if (socket != null && connectedVTube)
-  {
+function cancelCalibrate() {
+  if (socket != null && connectedVTube) {
     calibrateStage = 4;
     calibrate();
   }
 }
 
-function calibrate()
-{
+function calibrate() {
   var request = {
-    "type": "calibrating",
-    "stage": calibrateStage
-  }
+    type: "calibrating",
+    stage: calibrateStage,
+  };
   socket.send(JSON.stringify(request));
 }
 
@@ -502,34 +491,38 @@ function calibrate()
 // -----
 
 // Acquire a random image, sound, and associated properties
-function getImageWeightScaleSoundVolume()
-{
+function getImageWeightScaleSoundVolume() {
   var index;
   do {
     index = Math.floor(Math.random() * data.throws.length);
   } while (!data.throws[index].enabled);
 
   var soundIndex = -1;
-  if (hasActiveSound())
-  {
+  if (hasActiveSound()) {
     do {
       soundIndex = Math.floor(Math.random() * data.impacts.length);
     } while (!data.impacts[soundIndex].enabled);
   }
 
   return {
-    "location": data.throws[index].location,
-    "weight": data.throws[index].weight,
-    "scale": data.throws[index].scale,
-    "sound": data.throws[index].sound != null ? data.throws[index].sound : soundIndex != -1 ? data.impacts[soundIndex].location : null,
-    "volume": data.throws[index].volume * (soundIndex != -1 ? data.impacts[soundIndex].volume : 1),
-    "pixel": data.throws[index].pixel != null ? data.throws[index].pixel : false
+    location: data.throws[index].location,
+    weight: data.throws[index].weight,
+    scale: data.throws[index].scale,
+    sound:
+      data.throws[index].sound != null
+        ? data.throws[index].sound
+        : soundIndex != -1
+          ? data.impacts[soundIndex].location
+          : null,
+    volume:
+      data.throws[index].volume *
+      (soundIndex != -1 ? data.impacts[soundIndex].volume : 1),
+    pixel: data.throws[index].pixel != null ? data.throws[index].pixel : false,
   };
 }
 
 // Acquire a set of images, sounds, and associated properties for a default barrage
-function getImagesWeightsScalesSoundsVolumes(customAmount)
-{
+function getImagesWeightsScalesSoundsVolumes(customAmount) {
   var getImagesWeightsScalesSoundsVolumes = [];
 
   var count = customAmount == null ? data.barrageCount : customAmount;
@@ -553,63 +546,65 @@ ipcMain.on("raid", () => onRaidHandler());
 // Testing a specific item
 ipcMain.on("testItem", (event, message) => testItem(event, message));
 
-function testItem(_, item)
-{
+function testItem(_, item) {
   console.log("Testing Item");
-  if (socket != null)
-  {
+  if (socket != null) {
     var soundIndex = -1;
-    if (hasActiveSound())
-    {
+    if (hasActiveSound()) {
       do {
         soundIndex = Math.floor(Math.random() * data.impacts.length);
       } while (!data.impacts[soundIndex].enabled);
     }
-    
-    var request =
-    {
-      "type": "single",
-      "image": item.location,
-      "weight": item.weight,
-      "scale": item.scale,
-      "sound": item.sound == null && soundIndex != -1 ? data.impacts[soundIndex].location : item.sound,
-      "volume": item.volume,
-      "pixel": item.pixel != null ? item.pixel : false,
-      "data": data
-    }
+
+    var request = {
+      type: "single",
+      image: item.location,
+      weight: item.weight,
+      scale: item.scale,
+      sound:
+        item.sound == null && soundIndex != -1
+          ? data.impacts[soundIndex].location
+          : item.sound,
+      volume: item.volume,
+      pixel: item.pixel != null ? item.pixel : false,
+      data: data,
+    };
     socket.send(JSON.stringify(request));
   }
 }
 
 // A single random bonk
-function single()
-{
+function single() {
   console.log("Sending Single");
   if (socket != null && hasActiveImage()) {
     const imageWeightScaleSoundVolume = getImageWeightScaleSoundVolume();
 
-    var request =
-    {
-      "type": "single",
-      "image": imageWeightScaleSoundVolume.location,
-      "weight": imageWeightScaleSoundVolume.weight,
-      "scale": imageWeightScaleSoundVolume.scale,
-      "sound": imageWeightScaleSoundVolume.sound,
-      "volume": imageWeightScaleSoundVolume.volume,
-      "pixel": imageWeightScaleSoundVolume.pixel,
-      "data": data
-    }
+    var request = {
+      type: "single",
+      image: imageWeightScaleSoundVolume.location,
+      weight: imageWeightScaleSoundVolume.weight,
+      scale: imageWeightScaleSoundVolume.scale,
+      sound: imageWeightScaleSoundVolume.sound,
+      volume: imageWeightScaleSoundVolume.volume,
+      pixel: imageWeightScaleSoundVolume.pixel,
+      data: data,
+    };
     socket.send(JSON.stringify(request));
   }
 }
 
 // A random barrage of bonks
-function barrage(customAmount)
-{
+function barrage(customAmount) {
   console.log("Sending Barrage");
   if (socket != null && hasActiveImage()) {
-    const imagesWeightsScalesSoundsVolumes = getImagesWeightsScalesSoundsVolumes(customAmount);
-    var images = [], weights = [], scales = [], sounds = [], volumes = [], pixels = [];
+    const imagesWeightsScalesSoundsVolumes =
+      getImagesWeightsScalesSoundsVolumes(customAmount);
+    var images = [],
+      weights = [],
+      scales = [],
+      sounds = [],
+      volumes = [],
+      pixels = [];
     for (var i = 0; i < imagesWeightsScalesSoundsVolumes.length; i++) {
       images[i] = imagesWeightsScalesSoundsVolumes[i].location;
       weights[i] = imagesWeightsScalesSoundsVolumes[i].weight;
@@ -620,98 +615,126 @@ function barrage(customAmount)
     }
 
     var request = {
-      "type": "barrage",
-      "image": images,
-      "weight": weights,
-      "scale": scales,
-      "sound": sounds,
-      "volume": volumes,
-      "pixel": pixels,
-      "data": data
-    }
+      type: "barrage",
+      image: images,
+      weight: weights,
+      scale: scales,
+      sound: sounds,
+      volume: volumes,
+      pixel: pixels,
+      data: data,
+    };
     socket.send(JSON.stringify(request));
   }
 }
 
 // Acquire an image, sound, and associated properties for a custom bonk
-function getCustomImageWeightScaleSoundVolume(customName)
-{
+function getCustomImageWeightScaleSoundVolume(customName) {
   var index;
-  if (data.customBonks[customName].itemsOverride && hasActiveImageCustom(customName))
-  {
+  if (
+    data.customBonks[customName].itemsOverride &&
+    hasActiveImageCustom(customName)
+  ) {
     do {
       index = Math.floor(Math.random() * data.throws.length);
     } while (!data.throws[index].customs.includes(customName));
-  }
-  else
-  {
+  } else {
     do {
       index = Math.floor(Math.random() * data.throws.length);
     } while (!data.throws[index].enabled);
   }
 
   var soundIndex = -1;
-  if (data.customBonks[customName].soundsOverride && hasActiveSoundCustom(customName))
-  {
+  if (
+    data.customBonks[customName].soundsOverride &&
+    hasActiveSoundCustom(customName)
+  ) {
     do {
       soundIndex = Math.floor(Math.random() * data.impacts.length);
     } while (!data.impacts[soundIndex].customs.includes(customName));
-  }
-  else if (hasActiveSound())
-  {
+  } else if (hasActiveSound()) {
     do {
       soundIndex = Math.floor(Math.random() * data.impacts.length);
     } while (!data.impacts[soundIndex].enabled);
   }
 
   var impactDecalIndex = -1;
-  if (hasActiveImpactDecal(customName))
-  {
+  if (hasActiveImpactDecal(customName)) {
     do {
-      impactDecalIndex = Math.floor(Math.random() * data.customBonks[customName].impactDecals.length);
-    } while (!data.customBonks[customName].impactDecals[impactDecalIndex].enabled);
+      impactDecalIndex = Math.floor(
+        Math.random() * data.customBonks[customName].impactDecals.length,
+      );
+    } while (
+      !data.customBonks[customName].impactDecals[impactDecalIndex].enabled
+    );
   }
 
   var windupSoundIndex = -1;
-  if (hasActiveWindupSound(customName))
-  {
+  if (hasActiveWindupSound(customName)) {
     do {
-      windupSoundIndex = Math.floor(Math.random() * data.customBonks[customName].windupSounds.length);
-    } while (!data.customBonks[customName].windupSounds[windupSoundIndex].enabled);
+      windupSoundIndex = Math.floor(
+        Math.random() * data.customBonks[customName].windupSounds.length,
+      );
+    } while (
+      !data.customBonks[customName].windupSounds[windupSoundIndex].enabled
+    );
   }
 
   return {
-    "location": data.throws[index].location,
-    "weight": data.throws[index].weight,
-    "scale": data.throws[index].scale,
-    "sound": data.throws[index].sound != null ? data.throws[index].sound : (soundIndex != -1 ? data.impacts[soundIndex].location : null),
-    "volume": data.throws[index].volume * (soundIndex != -1 ? data.impacts[soundIndex].volume : 1),
-    "impactDecal": impactDecalIndex != -1 ? data.customBonks[customName].impactDecals[impactDecalIndex] : null,
-    "windupSound": windupSoundIndex != -1 ? data.customBonks[customName].windupSounds[windupSoundIndex] : null,
-    "pixel": data.throws[index].pixel != null ? data.throws[index].pixel : false
+    location: data.throws[index].location,
+    weight: data.throws[index].weight,
+    scale: data.throws[index].scale,
+    sound:
+      data.throws[index].sound != null
+        ? data.throws[index].sound
+        : soundIndex != -1
+          ? data.impacts[soundIndex].location
+          : null,
+    volume:
+      data.throws[index].volume *
+      (soundIndex != -1 ? data.impacts[soundIndex].volume : 1),
+    impactDecal:
+      impactDecalIndex != -1
+        ? data.customBonks[customName].impactDecals[impactDecalIndex]
+        : null,
+    windupSound:
+      windupSoundIndex != -1
+        ? data.customBonks[customName].windupSounds[windupSoundIndex]
+        : null,
+    pixel: data.throws[index].pixel != null ? data.throws[index].pixel : false,
   };
 }
 
 // Acquire a set of images, sounds, and associated properties for a custom bonk
-function getCustomImagesWeightsScalesSoundsVolumes(customName)
-{
+function getCustomImagesWeightsScalesSoundsVolumes(customName) {
   var getImagesWeightsScalesSoundsVolumes = [];
 
   for (var i = 0; i < data.customBonks[customName].barrageCount; i++)
-    getImagesWeightsScalesSoundsVolumes.push(getCustomImageWeightScaleSoundVolume(customName));
+    getImagesWeightsScalesSoundsVolumes.push(
+      getCustomImageWeightScaleSoundVolume(customName),
+    );
 
   return getImagesWeightsScalesSoundsVolumes;
 }
 
-ipcMain.on("testCustomBonk", (_, message) => { custom(message); });
+ipcMain.on("testCustomBonk", (_, message) => {
+  custom(message);
+});
 
 // A custom bonk test
-function custom(customName)
-{
+function custom(customName) {
   console.log("Sending Custom");
   if (socket != null && hasActiveImageCustom(customName)) {
-    const imagesWeightsScalesSoundsVolumes = getCustomImagesWeightsScalesSoundsVolumes(customName);
-    var images = [], weights = [], scales = [], sounds = [], volumes = [], impactDecals = [], windupSounds = [], pixels = [];
+    const imagesWeightsScalesSoundsVolumes =
+      getCustomImagesWeightsScalesSoundsVolumes(customName);
+    var images = [],
+      weights = [],
+      scales = [],
+      sounds = [],
+      volumes = [],
+      impactDecals = [],
+      windupSounds = [],
+      pixels = [];
     for (var i = 0; i < imagesWeightsScalesSoundsVolumes.length; i++) {
       images[i] = imagesWeightsScalesSoundsVolumes[i].location;
       weights[i] = imagesWeightsScalesSoundsVolumes[i].weight;
@@ -724,17 +747,17 @@ function custom(customName)
     }
 
     var request = {
-      "type": customName,
-      "image": images,
-      "weight": weights,
-      "scale": scales,
-      "sound": sounds,
-      "volume": volumes,
-      "impactDecal": impactDecals,
-      "windupSound": windupSounds,
-      "pixel": pixels,
-      "data": data
-    }
+      type: customName,
+      image: images,
+      weight: weights,
+      scale: scales,
+      sound: sounds,
+      volume: volumes,
+      impactDecal: impactDecals,
+      windupSound: windupSounds,
+      pixel: pixels,
+      data: data,
+    };
     socket.send(JSON.stringify(request));
   }
 }
@@ -743,33 +766,31 @@ function custom(customName)
 // Data
 // ----
 
-ipcMain.on("setData", (_, arg) =>
-{
+ipcMain.on("setData", (_, arg) => {
   setData(arg[0], arg[1], true);
 });
 
-function setData(field, value, external)
-{
+function setData(field, value, external) {
   data[field] = value;
-  fs.writeFileSync(app.getPath("userData") + "/data.temp", JSON.stringify(data));
-  fs.renameSync(app.getPath("userData") + "/data.temp", app.getPath("userData") + "/data.json")
-  if (external)
-    mainWindow.webContents.send("doneWriting");
-  
-  if (field == "version")
-    checkVersion();
+  fs.writeFileSync(
+    app.getPath("userData") + "/data.temp",
+    JSON.stringify(data),
+  );
+  fs.renameSync(
+    app.getPath("userData") + "/data.temp",
+    app.getPath("userData") + "/data.json",
+  );
+  if (external) mainWindow.webContents.send("doneWriting");
+
+  if (field == "version") checkVersion();
 }
 
-function hasActiveImage()
-{
-  if (data.throws == null || data.throws.length == 0)
-    return false;
+function hasActiveImage() {
+  if (data.throws == null || data.throws.length == 0) return false;
 
   var active = false;
-  for (var i = 0; i < data.throws.length; i++)
-  {
-    if (data.throws[i].enabled)
-    {
+  for (var i = 0; i < data.throws.length; i++) {
+    if (data.throws[i].enabled) {
       active = true;
       break;
     }
@@ -777,19 +798,14 @@ function hasActiveImage()
   return active;
 }
 
-function hasActiveImageCustom(customName)
-{
-  if (!data.customBonks[customName].itemsOverride)
-    return hasActiveImage();
+function hasActiveImageCustom(customName) {
+  if (!data.customBonks[customName].itemsOverride) return hasActiveImage();
 
-  if (data.throws == null || data.throws.length == 0)
-    return false;
+  if (data.throws == null || data.throws.length == 0) return false;
 
   var active = false;
-  for (var i = 0; i < data.throws.length; i++)
-  {
-    if (data.throws[i].customs.includes(customName))
-    {
+  for (var i = 0; i < data.throws.length; i++) {
+    if (data.throws[i].customs.includes(customName)) {
       active = true;
       break;
     }
@@ -797,16 +813,16 @@ function hasActiveImageCustom(customName)
   return active;
 }
 
-function hasActiveImpactDecal(customName)
-{
-  if (data.customBonks[customName].impactDecals == null || data.customBonks[customName].impactDecals.length == 0)
+function hasActiveImpactDecal(customName) {
+  if (
+    data.customBonks[customName].impactDecals == null ||
+    data.customBonks[customName].impactDecals.length == 0
+  )
     return false;
 
   var active = false;
-  for (var i = 0; i < data.customBonks[customName].impactDecals.length; i++)
-  {
-    if (data.customBonks[customName].impactDecals[i].enabled)
-    {
+  for (var i = 0; i < data.customBonks[customName].impactDecals.length; i++) {
+    if (data.customBonks[customName].impactDecals[i].enabled) {
       active = true;
       break;
     }
@@ -814,16 +830,16 @@ function hasActiveImpactDecal(customName)
   return active;
 }
 
-function hasActiveWindupSound(customName)
-{
-  if (data.customBonks[customName].windupSounds == null || data.customBonks[customName].windupSounds.length == 0)
+function hasActiveWindupSound(customName) {
+  if (
+    data.customBonks[customName].windupSounds == null ||
+    data.customBonks[customName].windupSounds.length == 0
+  )
     return false;
 
   var active = false;
-  for (var i = 0; i < data.customBonks[customName].windupSounds.length; i++)
-  {
-    if (data.customBonks[customName].windupSounds[i].enabled)
-    {
+  for (var i = 0; i < data.customBonks[customName].windupSounds.length; i++) {
+    if (data.customBonks[customName].windupSounds[i].enabled) {
       active = true;
       break;
     }
@@ -831,16 +847,12 @@ function hasActiveWindupSound(customName)
   return active;
 }
 
-function hasActiveSound()
-{
-  if (data.impacts == null || data.impacts.length == 0)
-    return false;
+function hasActiveSound() {
+  if (data.impacts == null || data.impacts.length == 0) return false;
 
   var active = false;
-  for (var i = 0; i < data.impacts.length; i++)
-  {
-    if (data.impacts[i].enabled)
-    {
+  for (var i = 0; i < data.impacts.length; i++) {
+    if (data.impacts[i].enabled) {
       active = true;
       break;
     }
@@ -848,19 +860,14 @@ function hasActiveSound()
   return active;
 }
 
-function hasActiveSoundCustom(customName)
-{
-  if (!data.customBonks[customName].soundsOverride)
-    return hasActiveSound();
+function hasActiveSoundCustom(customName) {
+  if (!data.customBonks[customName].soundsOverride) return hasActiveSound();
 
-  if (data.impacts == null || data.impacts.length == 0)
-    return false;
+  if (data.impacts == null || data.impacts.length == 0) return false;
 
   var active = false;
-  for (var i = 0; i < data.impacts.length; i++)
-  {
-    if (data.impacts[i].customs.includes(customName))
-    {
+  for (var i = 0; i < data.impacts.length; i++) {
+    if (data.impacts[i].customs.includes(customName)) {
       active = true;
       break;
     }
@@ -868,16 +875,12 @@ function hasActiveSoundCustom(customName)
   return active;
 }
 
-function hasActiveBitSound()
-{
-  if (data.impacts == null || data.impacts.length == 0)
-    return false;
+function hasActiveBitSound() {
+  if (data.impacts == null || data.impacts.length == 0) return false;
 
   var active = false;
-  for (var i = 0; i < data.impacts.length; i++)
-  {
-    if (data.impacts[i].bits)
-    {
+  for (var i = 0; i < data.impacts.length; i++) {
+    if (data.impacts[i].bits) {
       active = true;
       break;
     }
@@ -890,64 +893,77 @@ function hasActiveBitSound()
 // --------------
 
 var commandCooldowns = {};
-function onMessageHandler(_, _, text, msg)
-{
+function onMessageHandler(_, _, text, msg) {
   console.log("Received Message");
 
-  if (data.commands != null)
-  {
-    for (var i = 0; i < data.commands.length; i++)
-    {
-      if (data.commands[i].name != "" && data.commands[i].name.toLowerCase() == text.toLowerCase() && (msg.userInfo.isBroadcaster || msg.userInfo.isMod || !data.commands[i].modOnly) && commandCooldowns[data.commands[i].name.toLowerCase()] == null)
-      {
-        switch (data.commands[i].bonkType)
-        {
-          case "single":
-            single();
-            break;
-          case "barrage":
-            barrage();
-            break;
-          case "emote":
-            onRaidHandler(null, null, null, true);
-            break;
-          case "emotes":
-            onRaidHandler();
-            break;
-          default:
-            custom(data.commands[i].bonkType);
-            break;
-        }
+  if (data.commands != null) {
+    for (var i = 0; i < data.commands.length; i++) {
+      const commandName = data.commands[i].name.toLowerCase();
 
-        commandCooldowns[data.commands[i].name.toLowerCase()] = true;
-        setTimeout(() => { delete commandCooldowns[data.commands[i].name.toLowerCase()]; }, data.commands[i].cooldown * 1000);
-        break;
+      if (commandName == "") continue;
+
+      if (commandName != text.toLowerCase()) continue;
+
+      if (
+        data.commands[i].modOnly &&
+        !msg.userInfo.isBroadcaster &&
+        !msg.userInfo.isMod
+      )
+        continue;
+
+      if (commandCooldowns[commandName]) continue;
+
+      switch (data.commands[i].bonkType) {
+        case "single":
+          single();
+          break;
+        case "barrage":
+          barrage();
+          break;
+        case "emote":
+          onRaidHandler(null, null, null, true);
+          break;
+        case "emotes":
+          onRaidHandler();
+          break;
+        default:
+          custom(data.commands[i].bonkType);
+          break;
       }
+
+      commandCooldowns[commandName] = true;
+      setTimeout(() => {
+        commandCooldowns[commandName] = false;
+      }, data.commands[i].cooldown * 1000);
+      break;
     }
   }
 }
 
-ipcMain.on("listenRedeemStart", () => { listening = true; });
-ipcMain.on("listenRedeemCancel", () => { listening = false; });
+ipcMain.on("listenRedeemStart", () => {
+  listening = true;
+});
+ipcMain.on("listenRedeemCancel", () => {
+  listening = false;
+});
 
 var listening = false;
-async function onRedeemHandler(redemptionMessage)
-{
-  const reward = await apiClient.channelPoints.getCustomRewardById(redemptionMessage.broadcasterId, redemptionMessage.rewardId);
+async function onRedeemHandler(redemptionMessage) {
+  const reward = await apiClient.channelPoints.getCustomRewardById(
+    redemptionMessage.broadcasterId,
+    redemptionMessage.rewardId,
+  );
 
-  if (listening)
-  {
-    mainWindow.webContents.send("redeemData", [ redemptionMessage.rewardId, reward.title ] );
+  if (listening) {
+    mainWindow.webContents.send("redeemData", [
+      redemptionMessage.rewardId,
+      reward.title,
+    ]);
     listening = false;
-  }
-  else if (data.redeems != null)
-  {
-    for (var i = 0; i < data.redeems.length; i++)
-    {
-      if (data.redeems[i].id == redemptionMessage.rewardId)
-      {
-        switch (data.redeems[i].bonkType)
-        {
+  } else if (data.redeems != null) {
+    for (var i = 0; i < data.redeems.length; i++) {
+      if (data.redeems[i].id == redemptionMessage.rewardId) {
+        switch (data.redeems[i].bonkType) {
           case "single":
             single();
             break;
@@ -972,12 +988,9 @@ async function onRedeemHandler(redemptionMessage)
 }
 
 var canFollow = true;
-function onFollowHandler()
-{
-  if (canFollow && data.followEnabled)
-  {
-    switch (data.followType)
-    {
+function onFollowHandler() {
+  if (canFollow && data.followEnabled) {
+    switch (data.followType) {
       case "single":
         single();
         break;
@@ -995,21 +1008,20 @@ function onFollowHandler()
         break;
     }
 
-    if (data.followCooldown > 0)
-    {
+    if (data.followCooldown > 0) {
       canFollow = false;
-      setTimeout(() => { canFollow = true; }, data.followCooldown * 1000);
+      setTimeout(() => {
+        canFollow = true;
+      }, data.followCooldown * 1000);
     }
   }
 }
 
-var canSub = true, canSubGift = true;
-function onSubHandler(subMessage)
-{
-  if (canSub && data.subEnabled && !subMessage.isGift)
-  {
-    switch (data.subType)
-    {
+var canSub = true,
+  canSubGift = true;
+function onSubHandler(subMessage) {
+  if (canSub && data.subEnabled && !subMessage.isGift) {
+    switch (data.subType) {
       case "single":
         single();
         break;
@@ -1027,17 +1039,14 @@ function onSubHandler(subMessage)
         break;
     }
 
-    if (data.subCooldown > 0)
-    {
+    if (data.subCooldown > 0) {
       canSub = false;
-      setTimeout(() => { canSub = true; }, data.subCooldown * 1000);
+      setTimeout(() => {
+        canSub = true;
+      }, data.subCooldown * 1000);
     }
-  }
-  else if (canSubGift && data.subGiftEnabled && subMessage.isGift)
-  {
-    switch (data.subGiftType)
-    {
-
+  } else if (canSubGift && data.subGiftEnabled && subMessage.isGift) {
+    switch (data.subGiftType) {
       case "single":
         single();
         break;
@@ -1055,21 +1064,19 @@ function onSubHandler(subMessage)
         break;
     }
 
-    if (data.subGiftCooldown > 0)
-    {
+    if (data.subGiftCooldown > 0) {
       canSubGift = false;
-      setTimeout(() => { canSubGift = true; }, data.subGiftCooldown * 1000);
+      setTimeout(() => {
+        canSubGift = true;
+      }, data.subGiftCooldown * 1000);
     }
   }
 }
 
 var canCharity = true;
-function onCharityHandler()
-{
-  if (canCharity && data.charityEnabled)
-  {
-    switch (data.charityType)
-    {
+function onCharityHandler() {
+  if (canCharity && data.charityEnabled) {
+    switch (data.charityType) {
       case "single":
         single();
         break;
@@ -1087,37 +1094,48 @@ function onCharityHandler()
         break;
     }
 
-    if (data.charityCooldown > 0)
-    {
+    if (data.charityCooldown > 0) {
       canCharity = false;
-      setTimeout(() => { canCharity = true; }, data.charityCooldown * 1000);
+      setTimeout(() => {
+        canCharity = true;
+      }, data.charityCooldown * 1000);
     }
   }
 }
 
-const bitTiers = [ 100, 1000, 5000, 10000 ];
+const bitTiers = [100, 1000, 5000, 10000];
 
 var canBits = true;
-function onBitsHandler(bitsMessage)
-{
-  if (bitsMessage == null || canBits && data.bitsEnabled && bitsMessage.bits >= data.bitsMinDonation) {
-    if (bitsMessage != null && data.bitsCooldown > 0)
-    {
+function onBitsHandler(bitsMessage) {
+  if (
+    bitsMessage == null ||
+    (canBits && data.bitsEnabled && bitsMessage.bits >= data.bitsMinDonation)
+  ) {
+    if (bitsMessage != null && data.bitsCooldown > 0) {
       canBits = false;
-      setTimeout(() => { canBits = true; }, data.bitsCooldown * 1000);
+      setTimeout(() => {
+        canBits = true;
+      }, data.bitsCooldown * 1000);
     }
 
-    var totalBits = bitsMessage == null ? bitTiers[Math.floor(Math.random() * bitTiers.length)] : bitsMessage.bits;
+    var totalBits =
+      bitsMessage == null
+        ? bitTiers[Math.floor(Math.random() * bitTiers.length)]
+        : bitsMessage.bits;
 
-    var numBits = [0, 0, 0, 0], canAdd = true;
-    while (!data.bitsOnlySingle && totalBits >= 100 && totalBits + numBits[0] + numBits[1] + numBits[2] + numBits[3] > data.bitsMaxBarrageCount && canAdd)
-    {
+    var numBits = [0, 0, 0, 0],
+      canAdd = true;
+    while (
+      !data.bitsOnlySingle &&
+      totalBits >= 100 &&
+      totalBits + numBits[0] + numBits[1] + numBits[2] + numBits[3] >
+        data.bitsMaxBarrageCount &&
+      canAdd
+    ) {
       canAdd = false;
-      for (var i = bitTiers.length - 1; i >= 0; i--)
-      {
+      for (var i = bitTiers.length - 1; i >= 0; i--) {
         var max = totalBits / bitTiers[i];
-        if (max > 1)
-        {
+        if (max > 1) {
           max--;
           canAdd = true;
           numBits[i]++;
@@ -1129,24 +1147,32 @@ function onBitsHandler(bitsMessage)
       }
     }
 
-    if (totalBits + numBits[0] + numBits[1] + numBits[2] + numBits[3] > data.bitsMaxBarrageCount)
-      totalBits = data.bitsMaxBarrageCount - (numBits[0] + numBits[1] + numBits[2] + numBits[3]);
+    if (
+      totalBits + numBits[0] + numBits[1] + numBits[2] + numBits[3] >
+      data.bitsMaxBarrageCount
+    )
+      totalBits =
+        data.bitsMaxBarrageCount -
+        (numBits[0] + numBits[1] + numBits[2] + numBits[3]);
 
     var bitThrows = [];
-    for (var i = 0; i < bitTiers.length; i++)
-    {
+    for (var i = 0; i < bitTiers.length; i++) {
       while (bitThrows.length < data.bitsMaxBarrageCount && numBits[i]-- > 0)
         bitThrows.push(bitTiers[i]);
     }
-    while (totalBits-- > 0)
-      bitThrows.push(1);
-    
+    while (totalBits-- > 0) bitThrows.push(1);
+
     if (socket != null) {
-      var images = [], weights = [], scales = [], sounds = [], volumes = [], pixels = [];
-      while (bitThrows.length > 0)
-      {
-        switch (bitThrows.splice(Math.floor(Math.random() * bitThrows.length), 1)[0])
-        {
+      var images = [],
+        weights = [],
+        scales = [],
+        sounds = [],
+        volumes = [],
+        pixels = [];
+      while (bitThrows.length > 0) {
+        switch (
+          bitThrows.splice(Math.floor(Math.random() * bitThrows.length), 1)[0]
+        ) {
           case 1:
             images.push(data.bitThrows.one.location);
             weights.push(0.2);
@@ -1178,9 +1204,8 @@ function onBitsHandler(bitsMessage)
             pixels.push(false);
             break;
         }
-        
-        if (hasActiveBitSound())
-        {
+
+        if (hasActiveBitSound()) {
           var soundIndex;
           do {
             soundIndex = Math.floor(Math.random() * data.impacts.length);
@@ -1188,64 +1213,57 @@ function onBitsHandler(bitsMessage)
 
           sounds.push(data.impacts[soundIndex].location);
           volumes.push(data.impacts[soundIndex].volume);
-        }
-        else
-        {
+        } else {
           sounds.push(null);
           volumes.push(0);
         }
       }
 
       var request = {
-        "type": "barrage",
-        "image": images,
-        "weight": weights,
-        "scale": scales,
-        "sound": sounds,
-        "volume": volumes,
-        "pixel": pixels,
-        "data": data
-      }
+        type: "barrage",
+        image: images,
+        weight: weights,
+        scale: scales,
+        sound: sounds,
+        volume: volumes,
+        pixel: pixels,
+        data: data,
+      };
       socket.send(JSON.stringify(request));
     }
   }
 }
 
-var canRaid = true, numRaiders = 0;
-async function onRaidHandler(_, raider, raidInfo, isSingleEmote)
-{
-  if (data.raidEnabled && canRaid)
-  {
-    if (raider != null && data.raidCooldown > 0)
-    {
+var canRaid = true,
+  numRaiders = 0;
+async function onRaidHandler(_, raider, raidInfo, isSingleEmote) {
+  if (data.raidEnabled && canRaid) {
+    if (raider != null && data.raidCooldown > 0) {
       canRaid = false;
-      setTimeout(() => { canRaid = true; }, data.raidCooldown * 1000);
+      setTimeout(() => {
+        canRaid = true;
+      }, data.raidCooldown * 1000);
     }
 
-    if (raider == null)
-    {
-      raider = user.id
+    if (raider == null) {
+      raider = user.id;
       numRaiders = isSingleEmote ? 1 : data.barrageCount;
-      mainWindow.webContents.send("raid", [ raider, token.accessToken ]);
-    }
-    else
-    {
+      mainWindow.webContents.send("raid", [raider, token.accessToken]);
+    } else {
       numRaiders = raidInfo.viewerCount;
       raider = await apiClient.users.getUserByName(raider);
       raider = raider.id;
 
-      if (numRaiders >= data.raidMinRaiders)
-      {
+      if (numRaiders >= data.raidMinRaiders) {
         if (numRaiders < data.raidMinBarrageCount)
           numRaiders = data.raidMinBarrageCount;
-      
+
         if (numRaiders > data.raidMaxBarrageCount)
           numRaiders = data.raidMaxBarrageCount;
-      
+
         if (data.raidEmotes)
-          mainWindow.webContents.send("raid", [ raider, token.accessToken ]);
-        else
-          barrage(numRaiders);
+          mainWindow.webContents.send("raid", [raider, token.accessToken]);
+        else barrage(numRaiders);
       }
     }
   }
@@ -1253,120 +1271,124 @@ async function onRaidHandler(_, raider, raidInfo, isSingleEmote)
 
 ipcMain.on("emotes", (event, message) => handleRaidEmotes(event, message));
 
-function handleRaidEmotes(_, emotes)
-{
-  if (socket != null)
-  {
-    if (emotes.data.length > 0)
-    {
-      var images = [], weights = [], scales = [], sounds = [], volumes = [], pixels = [];
-      for (var i = 0; i < numRaiders; i++)
-      {
-        images.push("https://static-cdn.jtvnw.net/emoticons/v1/" + emotes.data[Math.floor(Math.random() * emotes.data.length)].id + "/3.0");
-  
+function handleRaidEmotes(_, emotes) {
+  if (socket != null) {
+    if (emotes.data.length > 0) {
+      var images = [],
+        weights = [],
+        scales = [],
+        sounds = [],
+        volumes = [],
+        pixels = [];
+      for (var i = 0; i < numRaiders; i++) {
+        images.push(
+          "https://static-cdn.jtvnw.net/emoticons/v1/" +
+            emotes.data[Math.floor(Math.random() * emotes.data.length)].id +
+            "/3.0",
+        );
+
         weights.push(1);
         scales.push(1);
         pixels.push(false);
-  
-        if (hasActiveSound())
-        {
+
+        if (hasActiveSound()) {
           var soundIndex;
           do {
             soundIndex = Math.floor(Math.random() * data.impacts.length);
           } while (!data.impacts[soundIndex].enabled);
-  
+
           sounds.push(data.impacts[soundIndex].location);
           volumes.push(data.impacts[soundIndex].volume);
-        }
-        else
-        {
+        } else {
           sounds.push(null);
           volumes.push(0);
         }
       }
-  
+
       var request = {
-        "type": "barrage",
-        "image": images,
-        "weight": weights,
-        "scale": scales,
-        "sound": sounds,
-        "volume": volumes,
-        "pixel": pixels,
-        "data": data
-      }
+        type: "barrage",
+        image: images,
+        weight: weights,
+        scale: scales,
+        sound: sounds,
+        volume: volumes,
+        pixel: pixels,
+        data: data,
+      };
       socket.send(JSON.stringify(request));
-    }
-    else
-      barrage(numRaiders);
+    } else barrage(numRaiders);
   }
 }
 // ============================================================
 // MODIFIKASI FINAL v4: DYNAMIC UDP LISTENER (FIX PORT TERPENTAL)
 // ============================================================
 
-const sb_dgram = require('dgram');
-const { ipcMain: sbIpc } = require('electron');
+const sb_dgram = require("dgram");
+const { ipcMain: sbIpc } = require("electron");
 
-let sbUdpServer = null; 
+let sbUdpServer = null;
 let hasPortBeenSet = false; // Penanda untuk mencegah timer menimpa port
 
 // Fungsi utama untuk menjalankan / merestart UDP
 function startCustomUDP(portNumber) {
-    // 1. Matikan server lama jika sedang menyala
-    if (sbUdpServer !== null) {
-        try { sbUdpServer.close(); } catch(e) {}
-    }
-
-    // 2. Buat server baru
-    sbUdpServer = sb_dgram.createSocket('udp4');
-    
-    // 3. Logika penerima pesan
-    sbUdpServer.on('message', (msg) => {
-        const command = msg.toString().trim();
-        console.log(`[SB-Bridge] Menerima perintah: "${command}"`);
-
-        try {
-            if (typeof data === 'undefined' || !data.customBonks) return;
-
-            if (command.toLowerCase() === 'single') {
-                if (typeof single === 'function') single();
-            } else if (command.toLowerCase() === 'barrage') {
-                if (typeof barrage === 'function') barrage(null);
-            } else {
-                if (data.customBonks.hasOwnProperty(command)) {
-                    custom(command);
-                } else {
-                    console.log(`[SB-Bridge] ERROR: Bonk "${command}" tidak ditemukan.`);
-                }
-            }
-        } catch (error) {
-            console.error("[SB-Bridge] Error Eksekusi:", error);
-        }
-    });
-
-    // 4. Buka Port
+  // 1. Matikan server lama jika sedang menyala
+  if (sbUdpServer !== null) {
     try {
-        sbUdpServer.bind(portNumber, () => {
-            console.log(`[SB-Bridge] SUKSES! Berjalan di Port: ${portNumber}`);
-        });
-    } catch (err) {
-        console.log(`[SB-Bridge] GAGAL membuka port ${portNumber}.`);
+      sbUdpServer.close();
+    } catch (e) {}
+  }
+
+  // 2. Buat server baru
+  sbUdpServer = sb_dgram.createSocket("udp4");
+
+  // 3. Logika penerima pesan
+  sbUdpServer.on("message", (msg) => {
+    const command = msg.toString().trim();
+    console.log(`[SB-Bridge] Menerima perintah: "${command}"`);
+
+    try {
+      if (typeof data === "undefined" || !data.customBonks) return;
+
+      if (command.toLowerCase() === "single") {
+        if (typeof single === "function") single();
+      } else if (command.toLowerCase() === "barrage") {
+        if (typeof barrage === "function") barrage(null);
+      } else {
+        if (data.customBonks.hasOwnProperty(command)) {
+          custom(command);
+        } else {
+          console.log(`[SB-Bridge] ERROR: Bonk "${command}" tidak ditemukan.`);
+        }
+      }
+    } catch (error) {
+      console.error("[SB-Bridge] Error Eksekusi:", error);
     }
+  });
+
+  // 4. Buka Port
+  try {
+    sbUdpServer.bind(portNumber, () => {
+      console.log(`[SB-Bridge] SUKSES! Berjalan di Port: ${portNumber}`);
+    });
+  } catch (err) {
+    console.log(`[SB-Bridge] GAGAL membuka port ${portNumber}.`);
+  }
 }
 
 // 5. Menerima sinyal dari UI (renderer.js)
-sbIpc.on('changeUdpPort', (event, newPort) => {
-    hasPortBeenSet = true; // TANDAI BAHWA UI SUDAH BERHASIL MELOAD PORT
-    console.log(`[SB-Bridge] Memperbarui port menjadi: ${newPort}`);
-    startCustomUDP(parseInt(newPort));
+sbIpc.on("changeUdpPort", (event, newPort) => {
+  hasPortBeenSet = true; // TANDAI BAHWA UI SUDAH BERHASIL MELOAD PORT
+  console.log(`[SB-Bridge] Memperbarui port menjadi: ${newPort}`);
+  startCustomUDP(parseInt(newPort));
 });
 
 // 6. Jalankan pertama kali saat aplikasi dibuka (Fallback)
 // Timer ini HANYA akan menyala jika renderer.js gagal/terlalu lambat mengirim data
 setTimeout(() => {
-    if (!hasPortBeenSet) {
-        console.log("[SB-Bridge] Menggunakan port default (8085) karena belum ada instruksi dari UI.");
-        startCustomUDP(8085);
-    }
+  if (!hasPortBeenSet) {
+    console.log(
+      "[SB-Bridge] Menggunakan port default (8085) karena belum ada instruksi dari UI.",
+    );
+    startCustomUDP(8085);
+  }
 }, 3000);
