@@ -6,6 +6,11 @@ const { EventSubWsListener } = require("@twurple/eventsub-ws");
 const fs = require("fs");
 const http = require("http");
 
+try {
+    require("./discordClient");
+} catch (err) {
+    console.error(err.stack);
+}
 
 
 // Previous versions of twurple had node_modules folders in some of the sub-packages.
@@ -130,7 +135,7 @@ ipcMain.on("getUserDataPath", () => {
 // Authentication
 // --------------
 
-var authProvider, token, apiClient, eventClient, chatClient, user, authenticated = false, authenticating = false, listenersActive = false;
+var authProvider, token, apiClient, eventClient, chatClient, user, authenticated = true, authenticating = false, listenersActive = true;
 
 const clientId = "u4rwa52hwkkgyoyow0t3gywxyv54pg";
 const redirectUri = "http://localhost:28396";
@@ -190,6 +195,8 @@ var eventListeners = [], chatListeners = [];
 
 // Event listeners
 async function eventSub() {
+  listenersActive=true;
+  return;
 
   // EventSub
   eventClient = new EventSubWsListener({ apiClient });
