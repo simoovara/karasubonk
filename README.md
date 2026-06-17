@@ -1,4 +1,4 @@
-Karasubonk + Streamer.bot Integration (UDP Listener)
+Karasubonk + Streamer.bot Integration (UDP Listener) + Simple discord selfbot listener
 
 This repository is a modified fork of the original [Karasubonk](https://github.com/typeou/karasubonk) . It introduces a lightweight UDP Listener to enable direct, seamless triggers from Streamer.bot (or any UDP sender) without relying on Twitch chat integration or simulated key presses.
 
@@ -36,25 +36,9 @@ To generate a standalone Windows application (located in the out folder):
 `npm run make`
 
 
-⚙️ Streamer.bot Setup
-
-Once the application is running, follow these steps in Streamer.bot to trigger events:
-
-1. Create a new Action.
-
-2. Add a UDP Broadcast Sub-Action (Core -> UDP -> UDP Broadcast).
-
-3. Set the Port to 8085 (Default port configured in this mod).
-
-4. Set the Message / Payload to match the exact name of your event, default is Hydrate
-
-> [!NOTE]
-> Create Other Costum event to trigger more "trow" item, and
-> ensure the payload matches the "Name" set in the Karasubonk app exactly (Case Sensitive).
-
-
 👏 Credits & Acknowledgments
 
 Original Application: A huge thank you to [typeou](https://github.com/typeou) for creating the original Karasubonk application. This mod would not exist without their amazing work.
+UDP Fork: [FLevy04](https://github.com/FLevy04/karasubonk)
 
 UDP Implementation: The logic for the UDP Listener was assisted by Google Gemini 3 Pro.
