@@ -10,14 +10,22 @@ const socket = dgram.createSocket("udp4");
 const IP = "127.0.0.1";
 const PORT = 8085;
 
-const triggers = [
+const normalTriggers = [
     "flare",
     "furea",
     "fureamo"
 ];
+const fleggTriggers = [
+    "flegg"
+]
 
 function sendBonk() {
     const message = Buffer.from("bonk");
+    socket.send(message, PORT, IP);
+}
+
+function sendFlegg() {
+    const message = Buffer.from("flegg");
     socket.send(message, PORT, IP);
 }
 
@@ -29,9 +37,13 @@ client.on("messageCreate", message => {
     const content = message.content.toLowerCase();
     console.log(content);
 
-    if (triggers.some(trigger => content.includes(trigger))) {
+    if (normalTriggers.some(trigger => content.includes(trigger))) {
         console.log(`Trigger detected: ${message.content}`);
         sendBonk();
+    }
+    else if (fleggTriggers.some(trigger => content.includes(trigger))) {
+        console.log(`Trigger detected: ${message.content}`);
+        sendFlegg();
     }
 });
 
